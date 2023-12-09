@@ -18,6 +18,9 @@
     <ClCompile Include="CourseManager.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="IndexMaxPQ.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <Text Include="course_inf.txt" />

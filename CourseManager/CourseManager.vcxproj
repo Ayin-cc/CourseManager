@@ -128,6 +128,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CourseManager.cpp" />
+    <ClCompile Include="IndexMaxPQ.cpp" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="course_inf.txt" />

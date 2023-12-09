@@ -1,7 +1,10 @@
+#pragma once
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <vector>
+#include <queue>
+#include "IndexMaxPQ.cpp"
 
 struct Course {
 	int id;
@@ -113,11 +116,85 @@ int main() {
 		}
 	}
 
-	int nn = 0;
+	// 按学期进行拓扑排序
+	std::vector<int> inDegree(adjList.size(), -1);
+	std::vector<int> outDegree(adjList.size(), 0);
 	for (Node* node : adjList) {
-		std::cout << ++nn << "->";
+		inDegree[node->data.id - 1] = node->data.prerequisite.size();
 		for (int i = 0; i < node->data.prerequisite.size(); i++) {
-			std::cout << node->data.prerequisite[i] << ' ';
+			outDegree[node->data.prerequisite[i] - 1]++;
+		}
+	}
+	for (int sem = 1; sem <= 8; sem++) {
+		std::vector<Course> res;
+
+		// 统计入度并用 -1 排除非本学期的以及选过的
+		std::vector<int> thisInDegree(adjList.size(), -1);
+		for (int i = 0; i < adjList.size(); i++) {
+			if ((adjList[i]->data.semester == sem || adjList[i]->data.semester == 0)) {
+				thisInDegree[i] = inDegree[i];
+			}
+		}
+
+		// 将入度为0的节点加入队列
+		std::queue<Course> q;
+		for (int i = 0; i < adjList.size(); i++) {
+			if (thisInDegree[i] == 0) {
+				if (adjList[i]->data.semester == sem) {
+					// 如果是本学期的直接选上
+					res.push_back(adjList[i]->data);
+					continue;
+				}
+				q.push(adjList[i]->data);
+
+			}
+		}
+		// 按照出度进行堆排序
+		IndexMaxPQ<int> heap(adjList.size() + 1);
+		int size = q.size();
+		for (int i = 0; i < size; i++) {
+			int index = q.front().id;
+			heap.insert(index - 1, outDegree[index - 1]);
+			q.pop();
+		}
+
+		// 依次删去入度为0的节点	
+		while (!heap.isEmpty()) {
+			// 达到学期要求课程数就跳出
+			if (res.size() == termCourses[sem - 1]) {
+				break;
+			}
+
+			Course c = courses[heap.maxIndex()];
+			heap.delMax();
+			res.push_back(c);
+			thisInDegree[c.id - 1] = -1;
+			inDegree[c.id - 1] = -1;
+
+			// 将该节点指向的节点入度-1
+			for (Node* node : adjList) {
+				Node* head = node;
+				Node* prev = node->prev;
+				while (prev != nullptr) {
+					if (prev->data.id == c.id) {
+						thisInDegree[node->data.id - 1]--;
+						inDegree[node->data.id - 1]--;
+						head->prev = prev->prev;
+						if (thisInDegree[node->data.id - 1] == 0) {
+							heap.insert(node->data.id - 1, outDegree[node->data.id - 1]);
+						}
+						break;
+					}
+					head = head->prev;
+					prev = prev->prev;
+				}
+			}
+		}
+
+		// 打印该学期课程
+		std::cout << "学期" << sem << ":" << std::endl;
+		for (Course c : res) {
+			std::cout << "  |" << "\n  +--" << c.name << std::endl;
 		}
 		std::cout << std::endl;
 	}
