@@ -8,17 +8,17 @@ struct Course {
 	std::string name;
 	int hours;
 	int semester;
-	int prerequisite[63];
+	std::vector<int> prerequisite;
 };
 
 struct Node {
 	Course data;
-	Course* next;
+	Node* prev;
 };
 
 // 字符串分割函数
 std::vector<std::string> split(std::string str, char del) {
-	std::vector<std::string> ret;
+	std::vector<std::string> ret(63);
 	int k = 0;
 	bool isDel = false;
 	for (char c : str) {
@@ -32,30 +32,41 @@ std::vector<std::string> split(std::string str, char del) {
 		}
 		if (!isDel && c == del) {
 			// 匹配到分隔符且不是连续的
+			ret[k].push_back('\0');
 			k++;
+			isDel = true;
 		}
 	}
+	ret.resize(k + 1);
+	return ret;
 }
 
 // 课程对象转换
-Node paramCourse(std::vector<std::string> line) {
-	Node ret;
-	int k = 0;
-	ret.data.id = std::stoi(line[0]);
-	ret.data.name = line[1];
-	ret.data.hours = std::stoi(line[2]);
-	ret.data.semester = std::stoi(line[3]);
-	std::vector<std::string> prevs = split(line[4], ' ');
+Course paramCourse(std::vector<std::string> line) {
+	Course ret;
+	ret.id = std::stoi(line[0]);
+	ret.name = line[1];
+	ret.hours = std::stoi(line[2]);
+	ret.semester = std::stoi(line[3]);
+	std::vector<std::string> prevs;
+	if (line.size() == 5) {
+		prevs = std::vector<std::string>(split(line[4], ' '));
+	}
+	
 	if (prevs.size() > 0) {
 		for (std::string str : prevs) {
-			ret.data.prerequisite[k++] = std::stoi(str);
+			if (str.empty()) {
+				continue;
+			}
+			ret.prerequisite.push_back(std::stoi(str));
 		}
 	}
 	return ret;	
 }
 
 int main() {
-	Node adjList[63];	// 课程邻接表
+	std::vector<Course> courses;
+	std::vector<Node*> adjList(63);	// 课程邻接表
 	int termCourses[8];	// 每个学期需要课程数
 	std::ifstream *file = new std::ifstream("./course_inf.txt");
 
@@ -72,19 +83,43 @@ int main() {
 		if (line.empty() || line[0] == '/' && line[1] == '/') {
 			continue;
 		}
+		std::vector<std::string> sstr = split(line, '\t');
 		if (!firstLine) {
 			// 读取各个学期需要修读课程数
 			firstLine = true;
-			std::vector<std::string> numsStr = split(line, '\t');
-			for (std::string s : numsStr) {
+			for (std::string s : sstr) {
 				termCourses[term++] = std::stoi(s);
 			}
 		}
 		else {
 			// 读取各个课程信息
-			std::vector<std::string> courseLine = split()
-			adjList[course].data = 
+			Course tc = paramCourse(sstr);
+			courses.push_back(tc);
+			adjList[course] = new Node;
+			adjList[course]->data = Course(tc);
+			adjList[course++]->prev = nullptr;
 		}
+	}
+	adjList.resize(course);
+
+	// 建立邻接表
+	for (Node* node : adjList) {
+		Node* head = node;
+		for (int i = 0; i < head->data.prerequisite.size(); i++) {
+			node->prev = new Node;
+			node->prev->data = Course(courses[head->data.prerequisite[i] - 1]);
+			node->prev->prev = nullptr;
+			node = node->prev;
+		}
+	}
+
+	int nn = 0;
+	for (Node* node : adjList) {
+		std::cout << ++nn << "->";
+		for (int i = 0; i < node->data.prerequisite.size(); i++) {
+			std::cout << node->data.prerequisite[i] << ' ';
+		}
+		std::cout << std::endl;
 	}
 
 	delete file;
